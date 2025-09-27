@@ -51,6 +51,47 @@ this time is to try another example from [rp-hal](https://github.com/rp-rs/rp-ha
 $ git checkout -b 02-blinky
 ```
 
+The example code is [here](https://github.com/rp-rs/rp-hal/blob/main/rp2040-hal-examples/src/bin/blinky.rs). Let's replace main.rs with this and start to add the dependency one by one.
+
+```
+$ cargo add panic-halt
+$ cargo add rp2040-hal
+$ cargo add embedded-hal
+$ cargo add rp2040-boot2
+```
+
+Then run ```cargo build```, the complaint is as follows.
+
+```
+error[E0433]: failed to resolve: could not find `cortex_m_rt` in the list of imported crates
+  --> src/main.rs:38:1
+   |
+38 | #[rp2040_hal::entry]
+```
+
+Let's add it.
+
+```
+cargo add cortex_m_rt
+```
+
+Another complaint:
+
+```
+error: linking with `rust-lld` failed: exit status: 1
+...
+= note: rust-lld: error: cannot find linker script defmt.x
+```
+
+Then it starts to complain about ```rust-lld: error: undefined symbol: _critical_section_1_0_release```. Check [this Cargo.toml in rp-hal](https://github.com/rp-rs/rp-hal/blob/main/rp2040-hal-examples/Cargo.toml).
+
+```
+cargo add critical-section
+cargo add defmt-rtt
+```
+
+Last, modify ```Cargo.toml``` with ```rp2040-hal``` to add features for critical-section-impl.
+
 ## refs
 
 * [cargo book: package manager](https://doc.rust-lang.org/cargo/)
