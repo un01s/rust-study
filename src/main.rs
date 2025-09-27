@@ -1,79 +1,58 @@
+// We won't be using the standard library.
 #![no_std]
+// We don't have a conventional `main` (`cortex_m_rt::entry` is different).
 #![no_main]
 
-// Ensure we halt the program on panic (if we don't mention this crate it won't
-// be linked)
-use panic_halt as _;
+// Pull in a panic handling crate. We have to `extern crate` this explicitly
+// because it isn't otherwise referenced in code!
+extern crate panic_halt;
 
-// Alias for our HAL crate
-use rp2040_hal as hal;
-
-// A shorter alias for the Peripheral Access Crate, which provides low-level
-// register access
-use hal::pac;
-
-// Some traits we need
-use embedded_hal::delay::DelayNs;
-use embedded_hal::digital::OutputPin;
-
-/// The linker will place this boot block at the start of our program image. We
-/// need this to help the ROM bootloader get our code up and running.
-/// Note: This boot block is not necessary when using a rp-hal based BSP
-/// as the BSPs already perform this step.
-#[link_section = ".boot2"]
+// For RP2040, we need to include a bootloader. The general Cargo build process
+// doesn't have great support for this, so we included it as a binary constant.
+#[link_section = ".boot_loader"]
 #[used]
-pub static BOOT2: [u8; 256] = rp2040_boot2::BOOT_LOADER_GENERIC_03H;
+static BOOT: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
-/// External high-speed crystal on the Raspberry Pi Pico board is 12 MHz. Adjust
-/// if your board has a different frequency
-const XTAL_FREQ_HZ: u32 = 12_000_000u32;
+// How often our blinky task wakes up (1/2 our blink frequency).
+const PERIOD: lilos::time::Millis = lilos::time::Millis(500);
 
-/// Entry point to our bare-metal application.
-///
-/// The `#[rp2040_hal::entry]` macro ensures the Cortex-M start-up code calls this function
-/// as soon as all global variables and the spinlock are initialised.
-///
-/// The function configures the RP2040 peripherals, then toggles a GPIO pin in
-/// an infinite loop. If there is an LED connected to that pin, it will blink.
-#[rp2040_hal::entry]
+#[cortex_m_rt::entry]
 fn main() -> ! {
-    // Grab our singleton objects
-    let mut pac = pac::Peripherals::take().unwrap();
+    // Check out peripherals from the runtime.
+    let mut cp = cortex_m::Peripherals::take().unwrap();
+    let p = rp2040_pac::Peripherals::take().unwrap();
 
-    // Set up the watchdog driver - needed by the clock setup code
-    let mut watchdog = hal::Watchdog::new(pac.WATCHDOG);
+    // Configure our output pin, GPIO 25. Begin by bringing IO BANK0 out of
+    // reset.
+    p.RESETS.reset.modify(|_, w| w.io_bank0().clear_bit());
+    while !p.RESETS.reset_done.read().io_bank0().bit() {}
 
-    // Configure the clocks
-    let clocks = hal::clocks::init_clocks_and_plls(
-        XTAL_FREQ_HZ,
-        pac.XOSC,
-        pac.CLOCKS,
-        pac.PLL_SYS,
-        pac.PLL_USB,
-        &mut pac.RESETS,
-        &mut watchdog,
+    // Set GPIO25 to be controlled by SIO.
+    p.IO_BANK0.gpio[25].gpio_ctrl.write(|w| w.funcsel().sio());
+    // Now have SIO configure GPIO25 as an output.
+    p.SIO.gpio_oe_set.write(|w| unsafe { w.bits(1 << 25) });
+
+    // Create a task to blink the LED. You could also write this as an `async
+    // fn` but we've inlined it as an `async` block for simplicity.
+    let blink = core::pin::pin!(async {
+        // PeriodicGate is a `lilos` tool for implementing low-jitter periodic
+        // actions. It opens once per PERIOD.
+        let mut gate = lilos::time::PeriodicGate::from(PERIOD);
+
+        // Loop forever, blinking things. Note that this borrows the device
+        // peripherals `p` from the enclosing stack frame.
+        loop {
+            p.SIO.gpio_out_xor.write(|w| unsafe { w.bits(1 << 25) });
+            gate.next_time().await;
+        }
+    });
+
+    // Configure the systick timer for 1kHz ticks at the default ROSC speed of
+    // _roughly_ 6 MHz.
+    lilos::time::initialize_sys_tick(&mut cp.SYST, 6_000_000);
+    // Set up and run the scheduler with a single task.
+    lilos::exec::run_tasks(
+        &mut [blink],  // <-- array of tasks
+        lilos::exec::ALL_TASKS,  // <-- which to start initially
     )
-    .unwrap();
-
-    let mut timer = rp2040_hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
-
-    // The single-cycle I/O block controls our GPIO pins
-    let sio = hal::Sio::new(pac.SIO);
-
-    // Set the pins to their default state
-    let pins = hal::gpio::Pins::new(
-        pac.IO_BANK0,
-        pac.PADS_BANK0,
-        sio.gpio_bank0,
-        &mut pac.RESETS,
-    );
-
-    // Configure GPIO25 as an output
-    let mut led_pin = pins.gpio25.into_push_pull_output();
-    loop {
-        led_pin.set_high().unwrap();
-        timer.delay_ms(500);
-        led_pin.set_low().unwrap();
-        timer.delay_ms(500);
-    }
 }
