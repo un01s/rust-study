@@ -92,6 +92,21 @@ cargo add defmt-rtt
 
 Last, modify ```Cargo.toml``` with ```rp2040-hal``` to add features for critical-section-impl.
 
+## 03 blinky with [lilos](https://github.com/cbiffle/lilos)
+
+the example code is under ```examples/rp2040```.
+
+Add obvious dependencies first.
+
+```
+$ cargo add lilos
+$ cargo add panic-halt
+$ cargo add rp2040-boot2
+$ cargo add cortex-m-rt
+$ cargo add cortex-m
+$ cargo add rp2040-pac
+```
+
 ## refs
 
 * [cargo book: package manager](https://doc.rust-lang.org/cargo/)
