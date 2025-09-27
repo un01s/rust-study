@@ -31,32 +31,3 @@ $ cargo run
 Hello, rand 0.5185969356100997
 ```
 
-## 01. blinky
-
-```
-$ git checkout -b 01-blinky
-```
-
-### how to get the dependencies right?
-
-the real trouble is to get the dependency right. the code is from [rp-hal-boards](https://github.com/rp-rs/rp-hal-boards). it uses workspace and another separate Cargo.toml for each board. Follow the code and refer to two Cargo.toml to add the dependency one after another until the code is compiled successfully. Try to use cargo add command or manually edit Cargo.toml. The last is to run the code for verification by cargo run.
-
-the implementation of critical_section is complained often by the compiler.
-
-## 02. blinky again
-
-this time is to try another example from [rp-hal](https://github.com/rp-rs/rp-hal).
-
-```
-$ git checkout -b 02-blinky
-```
-
-## refs
-
-* [cargo book: package manager](https://doc.rust-lang.org/cargo/)
-
-* [cargo repo](https://github.com/rust-lang/cargo)
-
-* [use cargo tree command](https://v5.chriskrycho.com/journal/using-cargo-tree/
-)
-
