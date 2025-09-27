@@ -322,22 +322,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
-name = "picob"
-version = "0.1.0"
-dependencies = [
- "cortex-m",
- "cortex-m-rt",
- "critical-section",
- "defmt",
- "defmt-rtt",
- "embedded-hal 1.0.0",
- "panic-halt",
- "rp-pico",
- "rp2040-boot2",
- "rp2040-hal",
-]
-
-[[package]]
 name = "pio"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -473,6 +457,22 @@ dependencies = [
  "cortex-m-rt",
  "critical-section",
  "vcell",
+]
+
+[[package]]
+name = "rust-study"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "cortex-m-rt",
+ "critical-section",
+ "defmt",
+ "defmt-rtt",
+ "embedded-hal 1.0.0",
+ "panic-halt",
+ "rp-pico",
+ "rp2040-boot2",
+ "rp2040-hal",
 ]
 
 [[package]]
