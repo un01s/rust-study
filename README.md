@@ -43,6 +43,14 @@ the real trouble is to get the dependency right. the code is from [rp-hal-boards
 
 the implementation of critical_section is complained often by the compiler.
 
+## 02. blinky again
+
+this time is to try another example from [rp-hal](https://github.com/rp-rs/rp-hal).
+
+```
+$ git checkout -b 02-blinky
+```
+
 ## refs
 
 * [cargo book: package manager](https://doc.rust-lang.org/cargo/)
